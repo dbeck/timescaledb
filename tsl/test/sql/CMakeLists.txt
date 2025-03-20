@@ -89,6 +89,7 @@ if(CMAKE_BUILD_TYPE MATCHES Debug)
     compression_algos.sql
     compression_bgw.sql
     compression_bools.sql
+    compression_bool_vectorized.sql
     compression_ddl.sql
     compression_hypertable.sql
     compression_merge.sql

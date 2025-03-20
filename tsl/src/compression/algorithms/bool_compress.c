@@ -317,6 +317,33 @@ tsl_bool_compressor_finish(PG_FUNCTION_ARGS)
 	PG_RETURN_POINTER(compressed);
 }
 
+extern ArrowArray*
+bool_decompress_all(Datum compressed, Oid element_type, MemoryContext dest_mctx)
+{
+	ArrowArray* result = NULL;
+	BoolDecompressionIterator *iterator = NULL;
+	uint64* pg_restrict validity_bitmap = NULL;
+	uint64* pg_restrict decompressed_values = NULL;
+
+	/* reuse the row based iterator code because it decompresses the whole compressed block */
+	iterator = (BoolDecompressionIterator *)bool_decompression_iterator_from_datum_forward(compressed, element_type);
+
+	if (iterator == NULL || iterator->values.num_elements == 0)
+		return NULL;
+
+
+	ArrowArray *result = MemoryContextAllocZero(dest_mctx, sizeof(ArrowArray) + sizeof(void *) * 2);
+	const void **buffers = (const void **) &result[1];
+	buffers[0] = validity_bitmap;
+	buffers[1] = decompressed_values;
+	result->n_buffers = 2;
+	result->buffers = buffers;
+	result->length = iterator->values.num_elements;
+	result->null_count = iterator->validity_bitmap.num_elements - iterator->validity_bitmap.num_ones;
+
+	return result;
+}
+
 /*
  * Local helpers
  */
